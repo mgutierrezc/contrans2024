@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1docker run -p 8888:8888 myfirstdocker
+# syntax=docker/dockerfile:1
 
 # Use the official Debian Bookworm image as the base image
 FROM python:3.12.5-bookworm
