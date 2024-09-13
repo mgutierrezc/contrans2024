@@ -1,3 +1,3 @@
 # contrans2024: DEng 1 - Class Project 
 
-Repository for DEng 1 Clas Project
+Click to access docker image: [https://hub.docker.com/repository/docker/mgutierrezc442/jupyterlab_dev/general](https://hub.docker.com/repository/docker/mgutierrezc442/jupyterlab_dev/general) 
