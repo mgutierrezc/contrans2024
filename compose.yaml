@@ -1,0 +1,42 @@
+services:
+  jupyter: 
+    # image: jkropko/jupyterlab_dev
+    image: myfirstdocker
+    ports: 
+      - "8888:8888"
+    env_file:
+      - .env
+    volumes:
+      - ./:/contrans2024
+    networks:
+      - dbnetwork
+
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    volumes: # local address or name of volume you created : container address 
+      - postgresdata:/var/lib/postgresql/data
+    networks:
+      - dbnetwork
+      
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    env_file:
+      - .env
+    volumes:
+      - mongodata:/data/db
+    networks:
+      - dbnetwork
+
+volumes: # creates volumes
+  postgresdata:
+  mongodata:
+
+networks:
+  dbnetwork:
+
