@@ -1,6 +1,6 @@
-import numpy as np
+import dotenv, os
 import pandas as pd
-import os, dotenv, requests, json
+import requests, json
 
 dotenv.load_dotenv()
 
@@ -110,29 +110,32 @@ class contrans:
 
         return members.reset_index(drop=True)
 
-    def get_sponsoredlegislation(self, bioguideid)
-        root = "https://api.congress.gov/v3"
-        endpoint = f"/member/{goodid}/sponsored-legislation"
-        headers = ct.make_headers()
+    def get_sponsoredlegislation(self, bioguideid):
 
-        params = {"api_key": ct.congresskey,
+        params = {"api_key": self.congresskey,
                   "limit": 250}
+        headers = self.make_headers()
+        
+        root = "https://api.congress.gov/v3"
+        endpoint = f"/member/{bioguideid}/sponsored-legislation"
 
         r = requests.get(root + endpoint, 
                             params=params, 
                             headers=headers)
-
+        
+        totalrecords = r.json()["pagination"]["count"]
         params["limit"] = 250
 
         j = 0
-        bills_dict = {}
+        bills_list = []
         while j < totalrecords:
             params["offset"] = j
             r = requests.get(root + endpoint, 
-                            params=params, 
-                             headers=headers)
-            records = r.json()["memsponsoredLegislationbers"]
-            bills_dict = bills_dict.update(records)
+                            params=params
+                            # headers=headers
+                            )
+            records = r.json()["sponsoredLegislation"]
+            bills_list+= records
             j = j + 250
 
-        return bills_dict
+        return bills_list
