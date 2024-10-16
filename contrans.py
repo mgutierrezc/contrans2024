@@ -65,15 +65,16 @@ class contrans:
         }
         return headers
 
-    def get_bioguideIDs(self, query="covid"):
+    def get_bioguideIDs(self, congress=118, query="covid"):
         params = {"api_key": self.congresskey,
                   "limit": 1}
         headers = self.make_headers()
         root = "https://api.congress.gov/v3"
-        endpoint = "/member"
+        endpoint = f"/member/congress/{congress}"
         r = requests.get(root + endpoint, 
-                            params=params, 
-                             headers=headers)
+                         params=params, 
+                         headers=headers,
+                         timeout=10)
 
         totalrecords = r.json()["pagination"]["count"]
         params["limit"] = 250
@@ -85,7 +86,8 @@ class contrans:
             params["offset"] = j
             r = requests.get(root + endpoint, 
                             params=params, 
-                             headers=headers)
+                            headers=headers,
+                            timeout=10)
             records = pd.json_normalize(r.json()["members"])
             bio_df = pd.concat([bio_df, records], ignore_index=True)
             j = j + 250
