@@ -1,16 +1,4 @@
 services:
-  jupyter: 
-    # image: jkropko/jupyterlab_dev
-    image: myfirstdocker
-    ports: 
-      - "8888:8888"
-    env_file:
-      - .env
-    volumes:
-      - ./:/contrans2024
-    networks:
-      - dbnetwork
-
   postgres:
     image: postgres:latest
     ports:

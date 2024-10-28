@@ -1,6 +1,8 @@
 import dotenv, os
 import pandas as pd
 import requests, json
+import psycopg
+from sqlalchemy import create_engine
 from bs4 import BeautifulSoup
 
 dotenv.load_dotenv()
@@ -16,6 +18,9 @@ class contrans:
         self.mypassword = os.getenv("mypassword")
         self.congresskey = os.getenv("congresskey")
         self.newskey = os.getenv("newskey")
+        self.POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+        self.MONGO_INITDB_ROOT_USERNAME = os.getenv("MONGO_INITDB_ROOT_USERNAME")
+        self.MONGO_INITDB_ROOT_PASSWORD = os.getenv("MONGO_INITDB_ROOT_PASSWORD")
         self.us_state_to_abbrev = {
                 "Alabama": "AL","Alaska": "AK","Arizona": "AZ","Arkansas": "AR",
                 "California": "CA","Colorado": "CO","Connecticut": "CT","Delaware": "DE",
@@ -223,6 +228,25 @@ class contrans:
         members = members.drop("terms.item", axis=1)
         return termsDF, members
     
+    def connect_to_postgres(self, pw, user="postgres", host="localhost", 
+                            port="5432", create_contrans=False):
+        
+        dbserver = psycopg.connect(
+            user=user,
+            password=pw,
+            host=host,
+            port=port,
+        )
+
+        dbserver.autocommit = True
+        if create_contrans:
+            cursor = dbserver
+            cursor.execute("DROP DATABASE IF EXISTS contrans")
+            cursor.execute("CREATE DATABASE contrans")
+        engine = create_engine(f"postgresql+psycopg://{user}:{pw}@{host}:{port}/contrans")
+        return dbserver, engine
+
+
     def make_members_df(self, members, ideology):
         """
         Members should be the output of  get_bioguideIDs(),
@@ -236,13 +260,16 @@ class contrans:
                               right_on="bioguide_id",
                               how="left")
         
+        dbserver, engine = self.connect_to_postgres(self.POSTGRES_PASSWORD)
+        members_df.to_sql("members", con=engine, index=False, chunksize=1000, if_exists="replace")
         return members_df
 
     def make_terms_df(self):
-                return self
+        return self
         
     def make_votes_df(self):
-            return self
+        return self
     
     def make_agreement_df(self):
-            return self
+        return self
+    
