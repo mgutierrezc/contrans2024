@@ -59,7 +59,7 @@ class contrans:
                 return useragent
         
         def make_headers(self,  
-                         email='jkropko@virginia.edu'):
+                         email='sgw3fy@virginia.edu'):
                 useragent=self.get_useragent()
                 headers = {
                         'User-Agent': useragent,
@@ -229,10 +229,15 @@ class contrans:
               mongo_bills.insert_many(bill_list_with_text)
 
         def upload_many_members_to_mongo(self, mongo_bills, members):
+                #i = 0
                 for m in members:
                         status = f'Now uploading bills from {m} to MongoDB'
                         print(status)
-                        self.upload_one_member_to_mongo(mongo_bills, m)
+                        try:
+                                self.upload_one_member_to_mongo(mongo_bills, m)
+                        except:
+                                print(f"Failed to upload {m}")
+                        # i += 1
         
         def query_mongo(self, collection, rows, columns):
                 cursor = collection.find(rows, columns)
