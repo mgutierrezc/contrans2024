@@ -9,6 +9,8 @@ import pymongo
 from bson.json_util import dumps, loads
 from sqlalchemy import create_engine
 from bs4 import BeautifulSoup
+import plotly.express as px
+
 
 class contrans:
         def __init__(self):
@@ -59,7 +61,7 @@ class contrans:
                 return useragent
         
         def make_headers(self,  
-                         email='sgw3fy@virginia.edu'):
+                         email='jkropko@virginia.edu'):
                 useragent=self.get_useragent()
                 headers = {
                         'User-Agent': useragent,
@@ -229,15 +231,15 @@ class contrans:
               mongo_bills.insert_many(bill_list_with_text)
 
         def upload_many_members_to_mongo(self, mongo_bills, members):
-                #i = 0
+                i = 1
                 for m in members:
-                        status = f'Now uploading bills from {m} to MongoDB'
+                        status = f'Now uploading bills from {m} to MongoDB: legislator {i} of {len(members)}'
                         print(status)
                         try:
                                 self.upload_one_member_to_mongo(mongo_bills, m)
-                        except:
-                                print(f"Failed to upload {m}")
-                        # i += 1
+                        except: 
+                                print(f'Failed to upload {m}')
+                        i += 1
         
         def query_mongo(self, collection, rows, columns):
                 cursor = collection.find(rows, columns)
@@ -330,3 +332,30 @@ class contrans:
                 '''
                 df = pd.read_sql_query(myquery, con=engine)
                 return df.head(10), df.tail(10)
+        
+        def plot_ideology(self, bioguide_id):
+                server, engine = self.connect_to_postgres(self.postgrespassword)
+                myquery = '''
+                SELECT bioguideid, district, name, partyname, state, nominate_dim1
+                FROM members
+                '''
+                ideo = pd.read_sql_query(myquery, con=engine)
+                member_ideo = ideo.query(f"bioguideid == {bioguide_id}").reset_index(drop=True)
+                fig = px.histogram(ideo, x='nominate_dim1',
+                                nbins=60,
+                                title='Distribution of Nominate Dim1',
+                                color='partyname')
+                fig.update_xaxes(title_text="Left-Right Ideology")
+                fig.update_layout(title_x=0.5)
+                fig.update_layout(title_text="How Liberal or Conservative Is this Person?", title_x=0.5)
+                fig.update_layout(legend_title_text='Party')
+                fig.update_xaxes(tickvals=[-.5, 0, .5], ticktext=["Liberal", "Centrist", "Conservative"])
+                fig.add_vline(x=0, line_width=1, line_color="black")
+                fig.add_vline(x=member_ideo.iloc[0]['nominate_dim1'], line_width=3, line_dash="dash", line_color="red")
+                fig.update_layout(hovermode="closest")
+                fig.add_annotation(text=f"{member_ideo.iloc[0]['name']} ({member_ideo.iloc[0]['state']}-{member_ideo.iloc[0]['district']})",
+                                xref="x", yref="paper",
+                                x=member_ideo.iloc[0]['nominate_dim1'], y=1.05,
+                                showarrow=False,
+                                font=dict(size=12, color="red"))
+                return fig

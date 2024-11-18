@@ -1,4 +1,15 @@
 services:
+  dash:
+    image: mgutierrezc442/dashcontainer
+    ports:
+      - "8050:8050"
+    env_file:
+      - .env
+    volumes:
+      - ./:/contrans2024
+    networks:
+      - dbnetwork
+
   postgres:
     image: postgres:latest
     ports:

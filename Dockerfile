@@ -13,7 +13,7 @@ COPY requirements.txt requirements.txt
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Make port 8888 available to the world outside this container
-EXPOSE 8888
+EXPOSE 8050
 
 # Run app.py when the container launches
-CMD ["jupyter", "lab", "--allow-root", "--ip=0.0.0.0", "--port=8888"]
+CMD ["python", "app.py"]
