@@ -10,6 +10,9 @@ from bson.json_util import dumps, loads
 from sqlalchemy import create_engine
 from bs4 import BeautifulSoup
 import plotly.express as px
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lsa import LsaSummarizer
 
 
 class contrans:
@@ -21,6 +24,8 @@ class contrans:
                 self.POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD') 
                 self.MONGO_INITDB_ROOT_USERNAME = os.getenv('MONGO_INITDB_ROOT_USERNAME')
                 self.MONGO_INITDB_ROOT_PASSWORD = os.getenv('MONGO_INITDB_ROOT_PASSWORD')
+                r = requests.get('https://httpbin.org/user-agent')
+                self.useragent = json.loads(r.text)['user-agent']
                 self.us_state_to_abbrev = {
                         "Alabama": "AL","Alaska": "AK","Arizona": "AZ","Arkansas": "AR",
                         "California": "CA","Colorado": "CO","Connecticut": "CT","Delaware": "DE",
@@ -53,12 +58,6 @@ class contrans:
                 url = 'https://voteview.com/static/data/out/members/H118_members.csv'
                 members = pd.read_csv(url)
                 return members
-        
-        def get_useragent(self):
-                url = 'https://httpbin.org/user-agent'
-                r = requests.get(url)
-                useragent = json.loads(r.text)['user-agent']
-                return useragent
         
         def make_headers(self,  
                          email='jkropko@virginia.edu'):
@@ -217,8 +216,8 @@ class contrans:
                 engine = create_engine(f'postgresql+psycopg://{user}:{pw}@{host}:{port}/contrans')
                 return dbserver, engine
                 
-        def connect_to_mongo(self, from_scratch=False):
-            myclient = pymongo.MongoClient(f"mongodb://{self.MONGO_INITDB_ROOT_USERNAME}:{self.MONGO_INITDB_ROOT_PASSWORD}@localhost:27017/")
+        def connect_to_mongo(self, from_scratch=False, host='localhost'):
+            myclient = pymongo.MongoClient(f"mongodb://{self.MONGO_INITDB_ROOT_USERNAME}:{self.MONGO_INITDB_ROOT_PASSWORD}@{host}:27017/")
             mongo_contrans = myclient["contrans"]
             collist = mongo_contrans.list_collection_names()
             if from_scratch and 'bills' in collist:
@@ -341,8 +340,8 @@ class contrans:
                 '''
                 ideo = pd.read_sql_query(myquery, con=engine)
                 member_ideo = ideo.query(f"bioguideid == {bioguide_id}").reset_index(drop=True)
-                fig = px.histogram(ideo, x='nominate_dim1',
-                                nbins=60,
+                fig = px.histogram(ideo, x='nominate_dim1', 
+                                nbins=60, 
                                 title='Distribution of Nominate Dim1',
                                 color='partyname')
                 fig.update_xaxes(title_text="Left-Right Ideology")
@@ -353,9 +352,33 @@ class contrans:
                 fig.add_vline(x=0, line_width=1, line_color="black")
                 fig.add_vline(x=member_ideo.iloc[0]['nominate_dim1'], line_width=3, line_dash="dash", line_color="red")
                 fig.update_layout(hovermode="closest")
-                fig.add_annotation(text=f"{member_ideo.iloc[0]['name']} ({member_ideo.iloc[0]['state']}-{member_ideo.iloc[0]['district']})",
-                                xref="x", yref="paper",
-                                x=member_ideo.iloc[0]['nominate_dim1'], y=1.05,
-                                showarrow=False,
+                fig.add_annotation(text=f"{member_ideo.iloc[0]['name']} ({member_ideo.iloc[0]['state']}-{member_ideo.iloc[0]['district']})", 
+                                xref="x", yref="paper", 
+                                x=member_ideo.iloc[0]['nominate_dim1'], y=1.05, 
+                                showarrow=False, 
                                 font=dict(size=12, color="red"))
                 return fig
+
+        def get_summary_text(self, input_text, sentences_count=3):
+                parser = PlaintextParser.from_string(input_text, Tokenizer("english"))
+                summarizer = LsaSummarizer()
+                summary = summarizer(parser.document, sentences_count)  
+                sumtext = ''
+                for sentence in summary:
+                        sumtext = sumtext + str(sentence)
+                return sumtext     
+
+        def summarize_news(self, bioguide_id, engine):
+           myquery = f'''
+                        SELECT *
+                        FROM members
+                        WHERE bioguideid = '{bioguide_id}'
+                '''
+           df = pd.read_sql_query(myquery, con=engine)
+           news_query = df['firstname'][0] + ' ' + df['lastname'][0] + ' ' + df['partyname'][0] + ' ' + df['state'][0] + ' ' + df['chamber'][0] + ' Congress'
+           r = requests.get('https://newsapi.org/v2/everything',
+                            params={'q': news_query, 'apiKey': self.newskey},
+                            headers={'User-Agent': self.useragent})
+           return r
+
+                         

@@ -1,19 +1,20 @@
 # syntax=docker/dockerfile:1
 
-# Use the official Debian Bookworm image as the base image
+# Use an official Python image as a base
 FROM python:3.12.5-bookworm
 
-# Set the working directory
+# Set the working directory to /contrans2024
 WORKDIR /contrans2024
 
-# Copy the current directory contents into the container at /app
+# Copy the requirements file into the working directory
 COPY requirements.txt requirements.txt
 
-# Install any needed packages specified in requirements.txt
+# Install the dependencies using pip
 RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN python -m nltk.downloader stopwords punkt wordnet
 
-# Make port 8888 available to the world outside this container
+# Expose the port for the dashboard
 EXPOSE 8050
 
-# Run app.py when the container launches
+# Run the dashboard when the container launches
 CMD ["python", "app.py"]
