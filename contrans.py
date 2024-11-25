@@ -61,7 +61,7 @@ class contrans:
         
         def make_headers(self,  
                          email='jkropko@virginia.edu'):
-                useragent=self.get_useragent()
+                useragent=self.useragent
                 headers = {
                         'User-Agent': useragent,
                         'From': email
@@ -302,11 +302,12 @@ class contrans:
                 return dt.to_string(index=False, header=False)
         
         ### Analyses
-        def make_agreement_df(self, bioguide_id, engine):
+        def make_agreement_df(self, bioguide_id, host='localhost'):
+                server, engine = self.connect_to_postgres(self.POSTGRES_PASSWORD, host=host)
                 myquery = f'''
                 SELECT icpsr
                 FROM members m
-                WHERE bioguideid = {bioguide_id}
+                WHERE bioguideid = '{bioguide_id}'
                 '''
                 icpsr = int(pd.read_sql_query(myquery, con=engine)['icpsr'][0])
                 myquery = f'''
@@ -321,7 +322,7 @@ class contrans:
                 INNER JOIN votes b
                         ON a.rollnumber = b.rollnumber
                         AND a.chamber = b.chamber
-                WHERE a.icpsr={icpsr} AND b.icpsr!={icpsr}
+                WHERE a.icpsr='{icpsr}' AND b.icpsr!='{icpsr}'
                 GROUP BY icpsr1, icpsr2
                 ORDER BY agree DESC
                 ) v
@@ -332,14 +333,14 @@ class contrans:
                 df = pd.read_sql_query(myquery, con=engine)
                 return df.head(10), df.tail(10)
         
-        def plot_ideology(self, bioguide_id):
-                server, engine = self.connect_to_postgres(self.postgrespassword)
+        def plot_ideology(self, bioguide_id, host='localhost'):
+                server, engine = self.connect_to_postgres(self.POSTGRES_PASSWORD, host=host)
                 myquery = '''
                 SELECT bioguideid, district, name, partyname, state, nominate_dim1
                 FROM members
                 '''
                 ideo = pd.read_sql_query(myquery, con=engine)
-                member_ideo = ideo.query(f"bioguideid == {bioguide_id}").reset_index(drop=True)
+                member_ideo = ideo.query(f"bioguideid == '{bioguide_id}'").reset_index(drop=True)
                 fig = px.histogram(ideo, x='nominate_dim1', 
                                 nbins=60, 
                                 title='Distribution of Nominate Dim1',

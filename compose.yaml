@@ -1,6 +1,9 @@
 services:
   dash:
-    image: mgutierrezc442/dashcontainer
+    build:
+        context: .
+        dockerfile: Dockerfile
+#    image: mgutierrezc442/dashcontainer
     ports:
       - "8050:8050"
     env_file:

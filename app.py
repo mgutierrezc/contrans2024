@@ -47,7 +47,11 @@ app.layout = html.Div([
                 ], style={'width': '68%', 'float': 'right'}),
             ]),
             dcc.Tab(label='Ideology and Votes', children=[
-                
+                dcc.Graph(id = 'ideograph'),
+                dcc.Markdown('This person votes very similarly to the following people:'),
+                dcc.Graph(id = 'agreetable'),
+                dcc.Markdown('This person rarely votes the same was as the following people:'),
+                dcc.Graph(id = 'disagreetable')
             ]),
             dcc.Tab(label='Bills', children=[
 
@@ -94,6 +98,27 @@ def bioimage(b):
     '''
     mydf = pd.read_sql_query(myquery, con=engine)
     return [mydf['depiction_imageurl'][0]]
+
+@app.callback([Output(component_id = 'ideograph', component_property = 'figure')],
+             [Input(component_id = 'dropdown', component_property = 'value')])
+
+def ideograph(b):
+    return [ct.plot_ideology(b, host='postgres')]
+
+@app.callback([Output(component_id = 'agreetable', component_property = 'figure')],
+             [Input(component_id = 'dropdown', component_property = 'value')])
+
+def agreetable(b):
+    agreedf, disagreedf = ct.make_agreement_df(b, host='postgres')
+    return [ff.create_table(agreedf)]
+
+@app.callback([Output(component_id = 'disagreetable', component_property = 'figure')],
+             [Input(component_id = 'dropdown', component_property = 'value')])
+
+def disagreetable(b):
+    agreedf, disagreedf = ct.make_agreement_df(b, host='postgres')
+    return [ff.create_table(disagreedf)]
+
 
 # Run the Dash app
 if __name__ == '__main__':
